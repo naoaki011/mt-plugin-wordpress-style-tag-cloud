@@ -16,7 +16,8 @@ sub _hdlr_wp_style_tag_rank
 	my ($ctx, $args) = @_;
 	
 	require MT::Entry;
-	require MT::Template::Context;
+#	require MT::Template::Context;
+	require MT::Template::Tags::Tag;
 	require MT::ObjectTag;
 	use POSIX qw(floor);
 	$args->{top} = 25 unless $args->{top} > 0;
@@ -27,8 +28,14 @@ sub _hdlr_wp_style_tag_rank
 	my (%blog_terms, %blog_args);
 	    $ctx->set_blog_load_context($args, \%blog_terms, \%blog_args) 
 	        or return $ctx->error($ctx->errstr);
-	my ($tags, $min, $max, $all_count) = MT::Template::Context::_tags_for_blog($ctx, \%blog_terms, \%blog_args, $type);
-	MT::Template::Context::_tag_sort($tags, 'rank');
+#	my $mtversion = MT->product_version;
+#    if ($mtversion < 5) {
+#		my ($tags, $min, $max, $all_count) = MT::Template::Context::_tags_for_blog($ctx, \%blog_terms, \%blog_args, $type);
+#		MT::Template::Context::_tag_sort($tags, 'rank');
+#	} else {
+		my ($tags, $min, $max, $all_count) = MT::Template::Tags::Tag::_tags_for_blog($ctx, \%blog_terms, \%blog_args, $type);
+		MT::Template::Tags::Tag::_tag_sort($tags, 'rank');
+#	}
 
 	my @tags;
 		if ($args->{top} >= scalar(@$tags))
@@ -52,8 +59,10 @@ sub _hdlr_wp_style_tag_rank
 	foreach (@tags)
 	{
 		$ctx->stash('Tag', $_);
-		my $search_link = MT::Template::Context::_hdlr_tag_search_link($ctx, $args);
-		my $tcount = MT::Template::Context::_hdlr_tag_count($ctx, $args);
+#		my $search_link = MT::Template::Context::_hdlr_tag_search_link($ctx, $args);
+#		my $tcount = MT::Template::Context::_hdlr_tag_count($ctx, $args);
+		my $search_link = MT::Template::Tags::Tag::_hdlr_tag_search_link($ctx, $args);
+		my $tcount = MT::Template::Tags::Tag::_hdlr_tag_count($ctx, $args);
 		die (defined($_) ? 'true' : 'false') if $tcount == 0;
 		my $count = floor ((log($tcount)/log(10))*100);
 		push (@processed_tags, 
