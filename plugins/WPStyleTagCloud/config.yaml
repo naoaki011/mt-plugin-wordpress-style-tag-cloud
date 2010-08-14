@@ -1,0 +1,8 @@
+name: WordPress Style Tag Cloud
+id: WPStyleTagCloud
+key: WPStyleTagCloud
+
+tags:
+    function:
+        WPStyleTagCloud: $WPStyleTagCloud::MT::Plugin::WordPressStyleTagCloud::_hdlr_wp_style_tag_rank
+
