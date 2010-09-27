@@ -16,11 +16,15 @@ sub _hdlr_wp_style_tag_rank
 	my ($ctx, $args) = @_;
 	
 	require MT::Entry;
-#	require MT::Template::Context;
-	require MT::Template::Tags::Tag;
 	require MT::ObjectTag;
+    my $mtversion  = substr(MT->version_number, 0, 3);
+    if ($mtversion < 5) {
+		require MT::Template::Context;
+	} else {
+	require MT::Template::Tags::Tag;
+	}
 	use POSIX qw(floor);
-	$args->{top} = 25 unless $args->{top} > 0;
+	$args->{top} = 25 unless ($args->{top} and $args->{top} > 0);
 	##Most of this code was shamelessly stolen from MT/Template/ContextHandlers.pm::_hdlr_tags
 	my $smallest = ($args->{smallest} and $args->{smallest} > 0) || 8;
 	my $largest = ($args->{largest} and ($args->{largest} > 0 and $args->{largest} > $smallest)) || 22;
@@ -28,14 +32,14 @@ sub _hdlr_wp_style_tag_rank
 	my (%blog_terms, %blog_args);
 	    $ctx->set_blog_load_context($args, \%blog_terms, \%blog_args) 
 	        or return $ctx->error($ctx->errstr);
-#	my $mtversion = MT->product_version;
-#    if ($mtversion < 5) {
-#		my ($tags, $min, $max, $all_count) = MT::Template::Context::_tags_for_blog($ctx, \%blog_terms, \%blog_args, $type);
-#		MT::Template::Context::_tag_sort($tags, 'rank');
-#	} else {
-		my ($tags, $min, $max, $all_count) = MT::Template::Tags::Tag::_tags_for_blog($ctx, \%blog_terms, \%blog_args, $type);
+	my ($tags, $minimum, $max, $all_count);
+    if ($mtversion < 5) {
+		($tags, $minimum, $max, $all_count) = MT::Template::Context::_tags_for_blog($ctx, \%blog_terms, \%blog_args, $type);
+		MT::Template::Context::_tag_sort($tags, 'rank');
+	} else {
+		($tags, $minimum, $max, $all_count) = MT::Template::Tags::Tag::_tags_for_blog($ctx, \%blog_terms, \%blog_args, $type);
 		MT::Template::Tags::Tag::_tag_sort($tags, 'rank');
-#	}
+	}
 
 	my @tags;
 		if ($args->{top} >= scalar(@$tags))
@@ -59,10 +63,15 @@ sub _hdlr_wp_style_tag_rank
 	foreach (@tags)
 	{
 		$ctx->stash('Tag', $_);
-#		my $search_link = MT::Template::Context::_hdlr_tag_search_link($ctx, $args);
-#		my $tcount = MT::Template::Context::_hdlr_tag_count($ctx, $args);
-		my $search_link = MT::Template::Tags::Tag::_hdlr_tag_search_link($ctx, $args);
-		my $tcount = MT::Template::Tags::Tag::_hdlr_tag_count($ctx, $args);
+		my $search_link;
+		my $tcount;
+	    if ($mtversion < 5) {
+			$search_link = MT::Template::Context::_hdlr_tag_search_link($ctx, $args);
+			$tcount = MT::Template::Context::_hdlr_tag_count($ctx, $args);
+		} else {
+			$search_link = MT::Template::Tags::Tag::_hdlr_tag_search_link($ctx, $args);
+			$tcount = MT::Template::Tags::Tag::_hdlr_tag_count($ctx, $args);
+		}
 		die (defined($_) ? 'true' : 'false') if $tcount == 0;
 		my $count = floor ((log($tcount)/log(10))*100);
 		push (@processed_tags, 
@@ -92,7 +101,7 @@ sub _hdlr_wp_style_tag_rank
 	foreach (@processed_tags)
 	{
 		my $processed_count = ($smallest + (($_->{count} - $min) * $font_step));
-		my $line = sprintf($link_template, $processed_count, $_->{topic_count}, $_->{id}, $_->{search_link}, $_->{name});
+		my $line = sprintf($link_template, ($args->{fontsize} ? $args->{fontsize} : $processed_count), $_->{topic_count}, $_->{id}, $_->{search_link}, $_->{name});
 		$inner .= $line . "\n";
 	}
 	sprintf($out, $inner);
